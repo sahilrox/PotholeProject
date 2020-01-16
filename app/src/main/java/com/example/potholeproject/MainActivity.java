@@ -128,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
         boolean emailflag = user.isEmailVerified();
 
         if(emailflag) {
-            finish();
             Snackbar.make(mainLayout, "Login Successful",Snackbar.LENGTH_SHORT).show();
             //startActivity(new Intent(MainActivity.this,HomePage.class));
         }
