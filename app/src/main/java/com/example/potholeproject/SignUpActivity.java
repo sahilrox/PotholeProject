@@ -132,20 +132,9 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void sendUserData() {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference myRef = database.getReference("Users");
-        myRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                UserProfile userProfile = new UserProfile(sname, semail, smobile, spass);
-                myRef.child(mAuth.getUid()).setValue(userProfile);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-        Toast.makeText(SignUpActivity.this,"Testing database",Toast.LENGTH_SHORT).show();
+        final DatabaseReference myRef = database.getReference("Users").child(mAuth.getUid());
+        UserProfile userProfile = new UserProfile(sname, semail, smobile, spass);
+        myRef.setValue(userProfile);
     }
 
     @Override

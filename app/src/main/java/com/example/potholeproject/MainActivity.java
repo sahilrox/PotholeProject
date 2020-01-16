@@ -19,6 +19,11 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -128,8 +133,9 @@ public class MainActivity extends AppCompatActivity {
         boolean emailflag = user.isEmailVerified();
 
         if(emailflag) {
+            finish();
             Snackbar.make(mainLayout, "Login Successful",Snackbar.LENGTH_SHORT).show();
-            //startActivity(new Intent(MainActivity.this,HomePage.class));
+            startActivity(new Intent(MainActivity.this,SubmitInfo.class));
         }
         else {
             Snackbar.make(mainLayout, "Verify your email", Snackbar.LENGTH_SHORT).show();
