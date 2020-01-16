@@ -1,0 +1,44 @@
+<?xml version = "1.0" encoding = "utf-8"?>
+<ScrollView xmlns:android = "http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width = "match_parent"
+    android:layout_height = "match_parent">
+
+    <LinearLayout
+        android:orientation = "vertical"
+        tools:context=".SubmitInfo"
+        android:layout_width = "match_parent"
+        android:layout_height = "match_parent">
+
+        <Button
+            android:id = "@+id/button"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:background="@drawable/button_rounded"
+            android:layout_marginTop="10dp"
+            android:text = "getlocation"/>
+
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/button_rounded"
+            android:text="Click Picture" />
+
+        <ImageView
+            android:id="@+id/capturedImage"
+            android:layout_width="match_parent"
+            android:layout_height="390dp"
+            android:layout_marginTop="30dp" />
+
+        <Button
+            android:id="@+id/reportBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_rounded"
+            android:layout_marginTop="20dp"
+            android:text="Report"/>
+    </LinearLayout>
+</ScrollView>
