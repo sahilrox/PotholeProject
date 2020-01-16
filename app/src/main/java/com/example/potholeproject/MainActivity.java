@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressDialog progressDialog;
     private Button login, signup;
     private View mainLayout;
+    private TextView forgotPassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,19 @@ public class MainActivity extends AppCompatActivity {
                 {
                     validate(email.getText().toString(),password.getText().toString());
                 }
+            }
+        });
+
+        forgotPassword = findViewById(R.id.forgotPass);
+        progressDialog = new ProgressDialog(this);
+
+        email.setText("");
+        password.setText("");
+
+        forgotPassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,ForgotPassActivity.class));
             }
         });
 
