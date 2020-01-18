@@ -147,6 +147,11 @@ public class SubmitInfo extends AppCompatActivity {
                     // GPS or Network is not enabled
                     // Ask user to enable GPS/network in settings
                     gps.showSettingsAlert();
+
+                    //Intent intent = new Intent(getActivity(), MapsActivity.class);
+                    //intent.putExtra("lat",latitude);
+                    //intent.putExtra("long",longitude);
+                    //startActivity(intent);
                 }
 
             }
