@@ -33,8 +33,11 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.label.FirebaseVisionLabel;
@@ -74,6 +77,8 @@ public class NotificationsFragment extends Fragment {
     private StorageTask uploadTask;
     String title,confidence;
     boolean detect = false;
+    boolean validLocation = true;
+    int flag=0;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, final Bundle savedInstanceState) {
@@ -110,7 +115,7 @@ public class NotificationsFragment extends Fragment {
                 if(bp == null) {
 
                     addReportToDatabase();
-                    Toast.makeText(getContext(),"Report uploaded without image",Toast.LENGTH_SHORT).show();
+                   // Toast.makeText(getContext(),"Report uploaded without image",Toast.LENGTH_SHORT).show();
                 }
                 else {
 
@@ -230,6 +235,49 @@ public class NotificationsFragment extends Fragment {
         return root;
     }
 
+    private void addReportToDatabase() {
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference("Reports");
+        String id = "Report" + System.currentTimeMillis();
+
+        getLocation();
+
+        String description = descriptionView.getText().toString();
+
+        database.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot dataSnapshot1 : dataSnapshot.getChildren()) {
+                    double myLat = Double.parseDouble(dataSnapshot1.child("latitude").getValue().toString());
+                    double myLon = Double.parseDouble(dataSnapshot1.child("longitude").getValue().toString());
+                    double latitude = Double.parseDouble(lat);
+                    double longitude = Double.parseDouble(lon);
+                    double distance = distanceInKmBetweenEarthCoordinates(latitude, longitude, myLat, myLon);
+
+                    if (distance < 10) {
+                        validLocation = false;
+                        flag++;
+                        return;
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+//        int count = 0;
+
+        if (validLocation) {
+            Report report = new Report(lat, lon, imageURL, mUser.getUid(), id, description);
+            database.child(id).setValue(report);
+        } else {
+            Toast.makeText(getContext(), "Pothole already reported", Toast.LENGTH_SHORT).show();
+        }
+        validLocation = true;
+    }
+
     private void getLocation() {
         gps = new GPSTracker(getContext());
 
@@ -253,21 +301,88 @@ public class NotificationsFragment extends Fragment {
         }
     }
 
-    private void addReportToDatabase() {
-        DatabaseReference database = FirebaseDatabase.getInstance().getReference("Reports");
-        String id = "Report" + System.currentTimeMillis();
+//    private void addReportToDatabase() {
+//        DatabaseReference database = FirebaseDatabase.getInstance().getReference("Reports");
+//        String id = "Report" + System.currentTimeMillis();
+//
+//        getLocation();
+//
+//        String description = descriptionView.getText().toString();
+//
+//        database.addValueEventListener(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                for (DataSnapshot dataSnapshot1 : dataSnapshot.getChildren()) {
+//                    double myLat = Double.parseDouble(dataSnapshot1.child("latitude").getValue().toString());
+//                    double myLon = Double.parseDouble(dataSnapshot1.child("longitude").getValue().toString());
+//                    double latitude = Double.parseDouble(lat);
+//                    double longitude = Double.parseDouble(lon);
+//                    double distance = distanceInKmBetweenEarthCoordinates(latitude, longitude, myLat, myLon);
+//
+//                    if (distance < 10) {
+//                        validLocation = false;
+//                        flag++;
+//                        return;
+//                    }
+//
+//
+//                }
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
+//
+//
+//
+//
+////        int count = 0;
+//
+//        if (validLocation) {
+//            Report report = new Report(lat, lon, imageURL, mUser.getUid(), id, description);
+//            database.child(id).setValue(report);
+//        } else {
+//            Toast.makeText(getContext(), "Pothole already reported", Toast.LENGTH_SHORT).show();
+//        }
+//        validLocation = true;
+//    }
+//        }
 
-        getLocation();
 
-        String description = descriptionView.getText().toString();
 
-        Report report = new Report(lat,lon,imageURL,mUser.getUid(),id,description);
-        database.child(id).setValue(report);
-
-    }
+//        if(validLocation) {
+//            Report report = new Report(lat,lon,imageURL,mUser.getUid(),id,description);
+//            database.child(id).setValue(report);
+//        }
+//        else {
+//            Toast.makeText(getContext(), "Pothole already reported", Toast.LENGTH_SHORT).show();
+//        }
+//        validLocation = true;
+//    }
 
     private void setImageUrl(String url) {
         imageURL = url;
+    }
+
+    double degreesToRadians(double degrees) {
+        return degrees * Math.PI / 180;
+    }
+
+    double distanceInKmBetweenEarthCoordinates(double lat1,double lon1,double lat2,double lon2) {
+        int earthRadiusKm = 6371;
+
+        double dLat = degreesToRadians(lat2-lat1);
+        double dLon = degreesToRadians(lon2-lon1);
+
+        lat1 = degreesToRadians(lat1);
+        lat2 = degreesToRadians(lat2);
+
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return (earthRadiusKm * c)/1000;
     }
 
     @Override
@@ -308,7 +423,7 @@ public class NotificationsFragment extends Fragment {
                                                         }
                                                     }
 
-                                                    Toast.makeText(getContext(), text+" "+entityId+" "+confidence, Toast.LENGTH_SHORT).show();
+                                                 //   Toast.makeText(getContext(), text+" "+entityId+" "+confidence, Toast.LENGTH_SHORT).show();
                                                 }
                                             }
                                         })

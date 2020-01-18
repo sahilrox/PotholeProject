@@ -28,11 +28,12 @@ public class HomeFragment extends Fragment {
 
     private HomeViewModel homeViewModel;
     private String name, email, mobile, uid;
-    private TextView nameBox, emailBox, mobileBox;
+    private TextView nameBox, emailBox, mobileBox, reports;
     private FirebaseAuth firebaseAuth;
     private FirebaseDatabase firebaseDatabase;
     private FirebaseStorage firebaseStorage;
     private ProgressDialog progressDialog;
+    int count = 0;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -46,6 +47,8 @@ public class HomeFragment extends Fragment {
         nameBox = root.findViewById(R.id.textViewName);
         emailBox = root.findViewById(R.id.textViewEmail);
         mobileBox = root.findViewById(R.id.textViewMobile);
+
+        reports = root.findViewById(R.id.logsTotal);
 
         firebaseAuth = FirebaseAuth.getInstance();
         firebaseDatabase = FirebaseDatabase.getInstance();
@@ -68,6 +71,25 @@ public class HomeFragment extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Toast.makeText(getContext(),databaseError.getCode(),Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        DatabaseReference reportsReference = firebaseDatabase.getReference("Reports");
+//        int count = 0;
+        reportsReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for(DataSnapshot dataSnapshot1 : dataSnapshot.getChildren()) {
+                    if(dataSnapshot1.child("userID").getValue().equals(firebaseAuth.getUid())) {
+                        count++;
+                    }
+                }
+                reports.setText(Integer.toString(count));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
 
