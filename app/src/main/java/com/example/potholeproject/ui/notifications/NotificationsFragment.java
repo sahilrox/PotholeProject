@@ -53,6 +53,7 @@ public class NotificationsFragment extends Fragment {
     private NotificationsViewModel notificationsViewModel;
     Button btnShowLocation, reportBtn;
     private static final int REQUEST_CODE_PERMISSION = 2;
+    int PICK_IMAGE_REQUEST = 111;
     String mPermission = Manifest.permission.ACCESS_FINE_LOCATION;
 
     // GPSTracker class
@@ -60,10 +61,11 @@ public class NotificationsFragment extends Fragment {
     private Button btnCapture;
     private ImageView imgCapture;
     String lat = null, lon =null, imageURL;
-    private final int PICK_IMAGE_REQUEST = 71;
+    private final int REQUEST_TAKE_PHOTO = 1;
     FirebaseStorage storage;
     StorageReference storageReference;
     FirebaseAuth mAuth;
+    ProgressDialog pd;
     private Uri filePath;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -81,12 +83,16 @@ public class NotificationsFragment extends Fragment {
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(intent, "Select Picture"),PICK_IMAGE_REQUEST);
+                intent.setAction(Intent.ACTION_PICK);
+                startActivityForResult(Intent.createChooser(intent, "Select Image"), PICK_IMAGE_REQUEST);
             }
         });
         reportBtn = root.findViewById(R.id.reportBtn);
         reportBtn.setEnabled(false);
+
+        pd = new ProgressDialog(getContext());
+        pd.setMessage("Uploading....");
+
 
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference();
@@ -94,12 +100,31 @@ public class NotificationsFragment extends Fragment {
         reportBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Send report to database
-                FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-                DatabaseReference databaseReference = firebaseDatabase.getReference("Users").child(mAuth.getUid()).child("Reports");
-                uploadImage();
-                Report report = new Report(lat,lon,imageURL);
-                databaseReference.setValue(report);
+                if(filePath != null) {
+                    pd.show();
+
+                    StorageReference childRef = storageReference.child("Images/"+System.currentTimeMillis());
+
+                    //uploading the image
+                    UploadTask uploadTask = childRef.putFile(filePath);
+
+                    uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            pd.dismiss();
+                            Toast.makeText(getContext(), "Upload successful", Toast.LENGTH_SHORT).show();
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            pd.dismiss();
+                            Toast.makeText(getContext(), "Upload Failed -> " + e, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+                else {
+                    Toast.makeText(getContext(), "Select an image", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -161,15 +186,17 @@ public class NotificationsFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_IMAGE_REQUEST) {
-            if (resultCode == RESULT_OK && data != null) {
-                filePath = data.getData();
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            filePath = data.getData();
 
-                Bitmap bp = (Bitmap) data.getExtras().get("data");
-                imgCapture.setImageBitmap(bp);
+            try {
+                //getting image from gallery
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), filePath);
+                //Setting image to ImageView
                 reportBtn.setEnabled(true);
-            } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(getContext(), "Cancelled", Toast.LENGTH_LONG).show();
+                imgCapture.setImageBitmap(bitmap);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

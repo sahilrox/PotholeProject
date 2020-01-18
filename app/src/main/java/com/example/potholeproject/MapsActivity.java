@@ -44,6 +44,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double longitude = getIntent().getDoubleExtra("long",0);
         LatLng pothole = new LatLng(latitude, longitude);
         mMap.addMarker(new MarkerOptions().position(pothole).title("Marker of pothole"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(pothole));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pothole,15));
+        mMap.animateCamera(CameraUpdateFactory.zoomIn());
+        // Zoom out to zoom level 10, animating with a duration of 2 seconds.
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
     }
 }
