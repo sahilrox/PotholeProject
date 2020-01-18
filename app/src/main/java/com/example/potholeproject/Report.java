@@ -1,12 +1,27 @@
 package com.example.potholeproject;
 
 public class Report {
-    public String latitude, longitude, imageURL;
+    private String latitude;
+    private String longitude;
+    private String imageURL;
+    private String userID;
+    private boolean serviced;
+    private int noOfComplaints;
+    private String reportID;
+    private String description;
 
-    public Report(String latitude, String longitude, String imageURL) {
+
+    public Report(String latitude, String longitude, String imageURL, String userID, String reportID,
+                  String description) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.imageURL = imageURL;
+        this.userID = userID;
+        this.serviced = false;
+        this.noOfComplaints = 1;
+        this.reportID = reportID;
+        this.description = description;
+
     }
 
     public String getLatitude() {
@@ -19,5 +34,25 @@ public class Report {
 
     public String getImageURL() {
         return imageURL;
+    }
+
+    public String getUserID() {
+        return userID;
+    }
+
+    public boolean isServiced() {
+        return serviced;
+    }
+
+    public int getNoOfComplaints() {
+        return noOfComplaints;
+    }
+
+    public String getReportID() {
+        return reportID;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

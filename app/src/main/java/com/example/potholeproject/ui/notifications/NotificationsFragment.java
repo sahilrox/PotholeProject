@@ -1,22 +1,32 @@
 package com.example.potholeproject.ui.notifications;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.system.Os;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
@@ -25,35 +35,69 @@ import com.example.potholeproject.GPSTracker;
 import com.example.potholeproject.R;
 import com.example.potholeproject.Report;
 import com.example.potholeproject.SubmitInfo;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.StorageTask;
+import com.google.firebase.storage.UploadTask;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
+import static androidx.constraintlayout.widget.Constraints.TAG;
 
 public class NotificationsFragment extends Fragment {
 
+    private static final int IMAGE_REQUEST = 1;
     private NotificationsViewModel notificationsViewModel;
-    Button btnShowLocation, reportBtn;
+    ImageButton btnShowLocation;
+    Button reportBtn;
     private static final int REQUEST_CODE_PERMISSION = 2;
     String mPermission = Manifest.permission.ACCESS_FINE_LOCATION;
+    private TextView mTextView;
+    private EditText descriptionView;
+    FirebaseUser mUser;
 
     // GPSTracker class
     GPSTracker gps;
-    private Button btnCapture;
+    private ImageButton btnCapture;
     private ImageView imgCapture;
     String lat = null, lon =null, imageURL;
     private static final int Image_Capture_Code = 1;
+    private Bitmap bp;
+    private Uri imageUri;
+    private StorageTask uploadTask;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+                             ViewGroup container, final Bundle savedInstanceState) {
         notificationsViewModel =
                 ViewModelProviders.of(this).get(NotificationsViewModel.class);
         View root = inflater.inflate(R.layout.fragment_notifications, container, false);
@@ -66,11 +110,18 @@ public class NotificationsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Intent cInt = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//                cInt.putExtra(MediaStore.EXTRA_OUTPUT,uri);
                 startActivityForResult(cInt,Image_Capture_Code);
+//                openImage();
+
             }
         });
+
+        descriptionView = root.findViewById(R.id.description);
+
         reportBtn = root.findViewById(R.id.reportBtn);
         reportBtn.setEnabled(false);
+//        mTextView = root.findViewById(R.id.textView);
 
         reportBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,9 +130,52 @@ public class NotificationsFragment extends Fragment {
                 FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
                 DatabaseReference databaseReference = firebaseDatabase.getReference("Users").child(mAuth.getUid()).child("Reports");
                 FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
-                StorageReference storageReference = firebaseStorage.getReference("Images");
-                Report report = new Report(lat,lon,imageURL);
-                databaseReference.setValue(report);
+                StorageReference storageReference = firebaseStorage.getReference();
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bp.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                byte data[] = baos.toByteArray();
+
+                mUser = FirebaseAuth.getInstance().getCurrentUser();
+
+                final StorageReference reference = storageReference.child("images/" +
+                        mUser.getUid() + "/" + System.currentTimeMillis() + ".jpg");
+                UploadTask task = reference.putBytes(data);
+
+                final ProgressDialog pd = new ProgressDialog(getContext());
+//                pd.setTitle("Uploading");
+                pd.setMessage("Uploading");
+                pd.show();
+
+                task.addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(getContext(), "Upload failed", Toast.LENGTH_SHORT).show();
+                        pd.dismiss();
+                    }
+                }).addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                        pd.dismiss();
+                        if(task.isSuccessful())
+                            Toast.makeText(getContext(),"DownloadUrl = " + reference.getDownloadUrl(), Toast.LENGTH_SHORT);
+
+                        final String mUri;
+                        reference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(Uri uri) {
+//                                mTextView.setText(uri.toString());
+                                setImageUrl(uri.toString());
+                                addReportToDatabase();
+                            }
+                        });
+//                        mTextView.setText(mUri);
+                    }
+                });
+
+
+//                Report report = new Report(lat,lon,imageURL);
+//                databaseReference.setValue(report);
             }
         });
 
@@ -134,14 +228,52 @@ public class NotificationsFragment extends Fragment {
         return root;
     }
 
+    private void getLocation() {
+        gps = new GPSTracker(getContext());
 
+        // check if GPS enabled
+        if(gps.canGetLocation()){
+
+            double latitude = gps.getLatitude();
+            double longitude = gps.getLongitude();
+
+            lat = Double.toString(latitude);
+            lon = Double.toString(longitude);
+
+            // \n is for new line
+            Toast.makeText(getContext(), "Your Location is - \nLat: "
+                    + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
+        }else{
+            // can't get location
+            // GPS or Network is not enabled
+            // Ask user to enable GPS/network in settings
+            gps.showSettingsAlert();
+        }
+    }
+
+    private void addReportToDatabase() {
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference("Reports");
+        String id = "Report" + System.currentTimeMillis();
+
+        getLocation();
+
+        String description = descriptionView.getText().toString();
+
+        Report report = new Report(lat,lon,imageURL,mUser.getUid(),id,description);
+        database.child(id).setValue(report);
+
+    }
+
+    private void setImageUrl(String url) {
+        imageURL = url;
+    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == Image_Capture_Code) {
-            if (resultCode == RESULT_OK) {
-                Bitmap bp = (Bitmap) data.getExtras().get("data");
+            if (resultCode == RESULT_OK){
+                bp = (Bitmap) data.getExtras().get("data");
                 imgCapture.setImageBitmap(bp);
                 reportBtn.setEnabled(true);
             } else if (resultCode == RESULT_CANCELED) {
