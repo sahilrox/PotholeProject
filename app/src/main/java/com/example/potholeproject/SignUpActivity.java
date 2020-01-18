@@ -133,7 +133,7 @@ public class SignUpActivity extends AppCompatActivity {
     private void sendUserData() {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         final DatabaseReference myRef = database.getReference("Users").child(mAuth.getUid());
-        UserProfile userProfile = new UserProfile(sname, semail, smobile, spass);
+        UserProfile userProfile = new UserProfile(sname, semail, smobile, spass, mAuth.getUid());
         myRef.setValue(userProfile);
     }
 
