@@ -3,6 +3,8 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#03A9F4</color>
+    <color name="active">#48f048</color>
+    <color name="inactive">#a4eda4</color>
     <color name="followers">#0EA006</color>
     <color name="headings">#3797CF</color>
     <color name="solidRectangle">#80FFFFFF</color>

@@ -15,12 +15,17 @@ public class Report {
                   String description) {
         this.latitude = latitude;
         this.longitude = longitude;
-        this.imageURL = imageURL;
+        if(imageURL == null) this.imageURL = "no url";
+        else this.imageURL = imageURL;
         this.userID = userID;
         this.serviced = false;
         this.noOfComplaints = 1;
         this.reportID = reportID;
         this.description = description;
+
+    }
+
+    public Report(){
 
     }
 
@@ -54,5 +59,37 @@ public class Report {
 
     public String getDescription() {
         return description;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
+    }
+
+    public void setUserID(String userID) {
+        this.userID = userID;
+    }
+
+    public void setServiced(boolean serviced) {
+        this.serviced = serviced;
+    }
+
+    public void setNoOfComplaints(int noOfComplaints) {
+        this.noOfComplaints = noOfComplaints;
+    }
+
+    public void setReportID(String reportID) {
+        this.reportID = reportID;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
